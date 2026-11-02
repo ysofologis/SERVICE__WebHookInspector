@@ -1,8 +1,25 @@
 # webhook-inspector
 
-A self-hosted webhook inspection tool: point any sender (Stripe, GitHub, PayPal, curl…) at a capture URL, watch requests arrive **live**, inspect headers/bodies, and replay or forward them with retries and a dead-letter queue.
+**webhook-inspector** is a self-hosted webhook debugging tool. It gives every integration a private capture URL: point any sender — Stripe, GitHub, PayPal, a legacy gateway, plain `curl` — at it, and every request is recorded verbatim and appears live in a dashboard. From there you can inspect exactly what arrived (method, query string, headers, raw body), forward it to your real service, and replay any past request on demand.
 
-Built as a portfolio piece demonstrating a production-shaped Laravel slice: **queues + job chaining, broadcasting (Reverb), authorization (policies + private channels), rate limiting, at-least-once delivery semantics, and a tested ingest path**.
+### Purpose
+
+Webhooks are push-based and fire-and-forget: if your receiver is down, misconfigured, or rejects a payload, most providers won't resend — the request is simply gone. And while building or debugging a consumer, the recurring question is *"what exactly did the provider send?"*, which today means log-diving or waiting for the next event. webhook-inspector sits between sender and receiver and makes that question answerable in seconds:
+
+- **Capture before processing** — the payload is durably stored the moment it arrives; nothing is lost while your consumer is broken or half-built.
+- **See the raw truth** — exact headers, query string, and body as the sender emitted them, not an interpretation.
+- **Replay on demand** — fix your code, replay the same payload, iterate without waiting for the provider to send another event.
+- **Observe delivery, don't guess it** — forwarding has production semantics: automatic retries with exponential backoff and a dead-letter queue you can inspect and re-drive.
+
+## Example use cases
+
+- **Debug a misbehaving provider webhook** — Stripe sends `invoice.payment_failed` with an unexpected shape; read the exact payload and headers in the dashboard instead of adding temporary logging to your receiver.
+- **Develop a consumer without a live provider** — capture a few real payloads once, then replay them at `localhost` while you code; no test-mode webhook juggling or provider-dashboard clicking.
+- **Bridge and audit legacy integrations** — an old gateway you can't change? Point it at the inspector, forward to the new service, and keep a 7-day record of everything received and every delivery attempt.
+- **Verify retry/DLQ behavior safely** — set the forward target to a deliberately failing URL and watch the 5 s → 15 min backoff ladder and dead-letter transition before wiring the real consumer.
+- **Harvest test fixtures** — captured bodies are realistic, provider-accurate fixtures for your consumer's test suite.
+
+> Built as a portfolio piece demonstrating a production-shaped Laravel slice: **queues + job chaining, broadcasting (Reverb), authorization (policies + private channels), rate limiting, at-least-once delivery semantics, and a tested ingest path**.
 
 ## Architecture
 
